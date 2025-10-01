@@ -6,12 +6,19 @@
     <title>Document</title>
   </head>
   <body>
+    <section id="planBox"></section>
+    >
     <script>
-    //   fetch("http://localhost:3000")
-    //     .then((response) => response.text())
-    //     .then((data) => {
-    //       console.log(data);
-    //     });
+      const planBox = document.querySelector("#planBox");
+      document.addEventListener("DOMContentLoaded", async () => {
+        const lurl = "https://localhost:3000/plans";
+        const response = await fetch(lurl);
+        const data = await reponse.json();
+        console.log(data);
+        const planItems = document.createElement("div");
+        planItems.innerHTML = "<h4>${p.destination}</h4> <p>${p.purpose}</p>";
+        planBox.appendChild(planItems);
+      });
     </script>
   </body>
 </html>

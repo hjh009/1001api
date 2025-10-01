@@ -8,7 +8,7 @@ const { createClient } = require("@supabase/supabase-js");
 dotenv.config();
 
 const { SUPABASE_KEY: supabasekey, SUPABASE_URL: supabaseurl } = process.env;
-console.log("SUPABSE KEY : ", supabase);
+console.log("SUPABSE KEY : ", supabasekey);
 console.log("SUPABSE URL : ", supabaseurl);
 const supabase = createClient(supabaseurl, supabasekey);
 
@@ -22,6 +22,14 @@ app.get("/", (req, res) => {
   // req -> request -> 전달 받은 데이터나 요청사항
   // res -> response -> 응답할 내용/방식을 담은 객체
   res.send("hello");
+});
+
+app.get("/plans", async (req, res) => {
+  const { data, error } = await supabase.from("tour_plan").select("*");
+  if (error) {
+    return res.status(400).json({ error: error.message });
+  }
+  res.json(data);
 });
 
 // DOM listener / server '대기' -> 특정한 요청. -> 응답.
