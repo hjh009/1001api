@@ -1,0 +1,26 @@
+{
+  "name": "1001api",
+  "version": "1.0.0",
+  "description": "배포연습",
+  "main": "index.html",
+  "scripts": {
+    "dev": "nodemon server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hjh009/1001api.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hjh009/1001api/issues"
+  },
+  "homepage": "https://github.com/hjh009/1001api#readme",
+  "dependencies": {
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
