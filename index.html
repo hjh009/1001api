@@ -1,19 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
-    <style>
-      #planForm {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        max-width: 240px;
-      }
-    </style>
-  </head>
-  <body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Travel Planner</title>
+  <style>
+    #planForm { display: flex; flex-direction: column; gap: 10px; max-width: 240px; }
+  </style>
+</head>
+<body>
+  <section>
     <form id="planForm">
       <input type="text" name="destination" placeholder="목적지" />
       <input type="text" name="purpose" placeholder="목적" />
@@ -22,67 +18,50 @@
       <label>종료일 <input type="date" name="end_date" /></label>
       <button type="submit">추가</button>
     </form>
-    <section id="planBox"></section>
+  </section>
 
-    <script>
-      const planBox = document.querySelector("#planBox");
-      const planForm = document.querySelector("#planForm");
+  <section id="planBox"></section>
 
-      // 렌더링
-      async function renderPlans() {
-        const res = await fetch("http://localhost:3000/plans");
-        const data = await res.json();
+  <script>
+    const planBox = document.querySelector("#planBox");
+    const planForm = document.querySelector("#planForm");
 
-        planBox.innerHTML = "";
-        data.forEach((p) => {
-          const div = document.createElement("div");
-          div.innerHTML = `
-      <h3>${p.destination} (${p.start_date} ~ ${p.end_date})</h3>
-      <p>목적: ${p.purpose}</p>
-      <p>인원: ${p.people_count}명</p>
-      <p>AI 제안: ${p.ai_suggestion}</p>
-    `;
+    async function renderPlans() {
+      planBox.innerHTML = "";
+      const res = await fetch("http://localhost:3000/plans");
+      const data = await res.json();
 
-          const btn = document.createElement("button");
-          btn.textContent = "삭제";
-          btn.addEventListener("click", async () => {
-            const delRes = await fetch(`http://localhost:3000/plans/${p.id}`, {
-              method: "DELETE",
-            });
-            if (!delRes.ok) return alert("삭제 실패");
-            renderPlans();
-          });
+      for (const p of data) {
+        const div = document.createElement("div");
+        div.innerHTML = `<h3>${p.destination} (${p.start_date} ~ ${p.end_date})</h3>
+                         <p>목적: ${p.purpose}</p>
+                         <p>인원: ${p.people_count}명</p>
+                         <p>AI 제안: ${p.ai_suggestion || ""}</p>`;
 
-          div.appendChild(btn);
-          planBox.appendChild(div);
+        const btn = document.createElement("button");
+        btn.textContent = "삭제";
+        btn.addEventListener("click", async () => {
+          await fetch(`http://localhost:3000/plans/${p.id}`, { method: "DELETE" });
+          await renderPlans();
         });
+
+        div.appendChild(btn);
+        planBox.appendChild(div);
       }
+    }
 
-      // 폼 제출
-      planForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const formData = new FormData(e.currentTarget);
-        const obj = Object.fromEntries(formData);
-        obj.people_count = Number(obj.people_count); // 숫자 변환
-
-        const res = await fetch("http://localhost:3000/plans", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(obj),
-        });
-
-        if (!res.ok) {
-          const err = await res.json();
-          return alert("추가 실패: " + err.error);
-        }
-
-        const data = await res.json();
-        console.log("추가된 계획:", data);
-        renderPlans();
+    planForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = Object.fromEntries(new FormData(e.target));
+      await fetch("http://localhost:3000/plans", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
       });
+      await renderPlans();
+    });
 
-      document.addEventListener("DOMContentLoaded", renderPlans);
-      
-    </script>
-  </body>
+    document.addEventListener("DOMContentLoaded", renderPlans);
+  </script>
+</body>
 </html>
