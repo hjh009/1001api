@@ -1,40 +1,79 @@
-// es-module -> import, commonjs -> require
-const express = require("express"); // express 안에 있는 이미 구현되어 있는 코드들을 express 객체 형태로 불러오겠다
+const express = require("express");
 const cors = require("cors");
 const app = express();
 const port = 3000;
 const dotenv = require("dotenv");
-const { createClient } = require("@supabase/supabase-js");
 dotenv.config();
+const { createClient } = require("@supabase/supabase-js");
+const { GoogleGenerativeAI } = require("@google/generative-ai"); // 최신 라이브러리
 
-const { SUPABASE_KEY: supabasekey, SUPABASE_URL: supabaseurl } = process.env;
-console.log("SUPABSE KEY : ", supabasekey);
-console.log("SUPABSE URL : ", supabaseurl);
-const supabase = createClient(supabaseurl, supabasekey);
+// Supabase
+const { SUPABASE_KEY, SUPABASE_URL } = process.env;
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 app.use(cors());
-app.use(express.json()); // json 형태로 된 body 데이터를 해석해서 req.body에 넣어줌
+app.use(express.json());
 
-app.get("/", (req, res) => {
-  // req -> request -> 전달 받은 데이터나 요청사항
-  // res -> response -> 응답할 내용/방식을 담은 객체
-  res.send("hello");
-});
-
+// GET /plans
 app.get("/plans", async (req, res) => {
   const { data, error } = await supabase.from("tour_plan").select("*");
-  if (error) {
-    return res.status(400).json({ error: error.message });
-  }
+  if (error) return res.status(400).json({ error: error.message });
   res.json(data);
 });
 
-app.delete("/plans", async (req, res) => {
-  const { planId } = req.params; // { name: "제주도", price: 1000000 }
-  const { error } = await supabase.from("tour_plan").delete().eq("id", planId);
-  if (error) {
-    return res.status(400).json({ error: error.message });
+// POST /plans
+app.post("/plans", async (req, res) => {
+  try {
+    const plan = req.body;
+
+    // 필수 필드 검증
+    const requiredFields = [
+      "destination",
+      "purpose",
+      "start_date",
+      "end_date",
+      "people_count",
+    ];
+    for (const field of requiredFields) {
+      if (!plan[field])
+        return res.status(400).json({ error: `${field} 필드가 필요합니다.` });
+    }
+
+    // AI 호출
+    plan.ai_suggestion = "";
+    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+    const prompt = `
+      [장소] ${plan.destination}
+      [목적] ${plan.purpose}
+      [시작일] ${plan.start_date} ~ [종료일] ${plan.end_date}
+      [인원] ${plan.people_count}명
+      위 여행 계획에 맞는 상세 일정을 만들어줘.
+    `;
+
+    const aiRes = await model.generateContent(prompt);
+    plan.ai_suggestion = aiRes?.response?.text || "AI 제안 없음";
+
+    // Supabase insert
+    const { data, error } = await supabase
+      .from("tour_plan")
+      .insert([plan])
+      .select();
+    if (error) return res.status(400).json({ error: error.message });
+
+    res.status(201).json(data[0]);
+  } catch (err) {
+    console.error("POST /plans Error:", err);
+    res.status(500).json({ error: err.message || "서버 내부 오류" });
   }
+});
+
+// DELETE /plans/:planId
+app.delete("/plans/:planId", async (req, res) => {
+  const { planId } = req.params;
+  const { error } = await supabase.from("tour_plan").delete().eq("id", planId);
+  if (error) return res.status(400).json({ error: error.message });
   res.status(204).send();
 });
 
@@ -42,4 +81,4 @@ app.listen(port, () => {
   console.log(`서버가 ${port}번 포트로 실행 중입니다.`);
 });
 
-// DOM listener / server '대기' -> 특정한 요청. -> 응답.
+console.log("Google API Key:", process.env.GOOGLE_API_KEY);
