@@ -4,21 +4,100 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
+    <style>
+      #planForm {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-width: 240px;
+      }
+    </style>
   </head>
   <body>
+    <section>
+      <form id="planForm">
+        <input type="text" name="destination" placeholder="목적지" />
+        <input type="text" name="purpose" placeholder="목적" />
+        <input type="number" name="people_count" placeholder="인원수" />
+        <label
+          >시작일
+          <input type="date" name="start_date" placeholder="시작일" />
+        </label>
+        <label
+          >종료일
+          <input type="date" name="end_date" placeholder="종료일" />
+        </label>
+        <button type="submit">추가</button>
+      </form>
+    </section>
     <section id="planBox"></section>
-    >
+
     <script>
+      //dom
       const planBox = document.querySelector("#planBox");
-      document.addEventListener("DOMContentLoaded", async () => {
-        const lurl = "https://localhost:3000/plans";
+      const planForm = document.querySelector("#planForm");
+
+      //함수
+
+      async function renderPlans() {
+        const lurl = "http://localhost:3000/plans";
         const response = await fetch(lurl);
-        const data = await reponse.json();
+        const data = await response.json();
         console.log(data);
-        const planItems = document.createElement("div");
-        planItems.innerHTML = "<h4>${p.destination}</h4> <p>${p.purpose}</p>";
-        planBox.appendChild(planItems);
+        const plans = document.querySelector("#plans");
+        for (const p of data) {
+          const planItems = document.createElement("div");
+          planItems.innerHTML = `<h3>${p.destination} (${p["start_date"]} ~ ${p["end_date"]})</h3>
+            <p>목적: ${p.purpose}</p>
+            <p>인원: ${p["people_count"]}명</p>
+            `;
+          const removeBtn = document.createElement("button");
+          removeBtn.textContent = "삭제";
+          removeBtn.addEventListener("click", async () => {
+            const delurl = `http://localhost:3000/plans/${p.id}`;
+            const delresponse = await fetch(delurl, {
+              method: "DELETE",
+            });
+            if (!response.ok) {
+              return alert("네트워크 응답에 문제가 있습니다.");
+            } else {
+              alert("여행 계획이 삭제되었습니다.");
+              window.location.reload();
+              await renderPlans();
+            }
+            const data = await response.json();
+            console.log(data);
+          });
+          planItems.appendChild(removeBtn);
+          planBox.appendChild(planItems);
+        }
+      }
+
+      planForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const formData = new FormData(event.currentTarget);
+        const formDataObj = Object.fromEntries(formData);
+        console.log(formDataObj);
+
+        const lurl = "http://localhost:3000/plans";
+        const response = await fetch(lurl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formDataObj),
+        });
+        if (!response.ok) {
+          return alert("네트워크 응답에 문제가 있습니다.");
+        } else {
+          alert("여행 계획이 추가되었습니다.");
+          window.location.reload();
+          await renderPlans();
+        }
+        const data = await response.json();
+        console.log(data);
       });
+      document.addEventListener("DOMContentLoaded", renderPlans);
     </script>
   </body>
 </html>

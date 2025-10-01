@@ -13,10 +13,7 @@ console.log("SUPABSE URL : ", supabaseurl);
 const supabase = createClient(supabaseurl, supabasekey);
 
 app.use(cors());
-
-app.listen(port, () => {
-  console.log(`서버가 ${port}번 포트로 실행 중입니다.`);
-});
+app.use(express.json()); // json 형태로 된 body 데이터를 해석해서 req.body에 넣어줌
 
 app.get("/", (req, res) => {
   // req -> request -> 전달 받은 데이터나 요청사항
@@ -30,6 +27,19 @@ app.get("/plans", async (req, res) => {
     return res.status(400).json({ error: error.message });
   }
   res.json(data);
+});
+
+app.delete("/plans", async (req, res) => {
+  const { planId } = req.params; // { name: "제주도", price: 1000000 }
+  const { error } = await supabase.from("tour_plan").delete().eq("id", planId);
+  if (error) {
+    return res.status(400).json({ error: error.message });
+  }
+  res.status(204).send();
+});
+
+app.listen(port, () => {
+  console.log(`서버가 ${port}번 포트로 실행 중입니다.`);
 });
 
 // DOM listener / server '대기' -> 특정한 요청. -> 응답.
